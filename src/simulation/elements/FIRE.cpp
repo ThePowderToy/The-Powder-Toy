@@ -87,9 +87,55 @@ int Element_FIRE_update(UPDATE_FUNC_ARGS)
 			}
 		}
 		break;
+	case PT_TLRY:
+		for (rx = -2; rx <= 2; ++rx)
+		{
+			for (ry = -2; ry <= 2; ++ry)
+			{
+				if (BOUNDS_CHECK && (rx || ry))
+				{
+					r = pmap[y + ry][x + rx];
+					if (!r)
+						continue;
+					rt = TYP(r);
+
+					if ((rt != PT_TLRY && rt != PT_FIRE && rt != PT_PLSM && rt != PT_SMKE && rt != PT_DMND && rt != parts[i].ctype && fabs(parts[i].vx) + fabs(parts[i].vy) >= 1.1) || parts[i].temp >= 2000)
+					{
+						for (int sx = -5; sx <= 5; ++sx)
+						{
+							for (int sy = -5; sy <= 5; ++sy)
+							{
+								if (RNG::Ref().chance(1, 5))
+								{
+									sim->create_part(-1, x + sx, y + sy, PT_PLSM);
+								}
+								else if (RNG::Ref().chance(1, 15))
+								{
+									int s = sim->create_part(-1, x + sx, y + sy, PT_BRMT);
+									if (s != -1)
+									{
+										parts[s].vx = RNG::Ref().between(-20, 20);
+										parts[s].vy = RNG::Ref().between(-20, 20);
+									}
+								}
+								else
+								{
+									sim->create_part(-1, x + sx, y + sy, PT_FIRE);
+								}
+							}
+						}
+
+						sim->create_part(i, x, y, PT_FIRE);
+						sim->pv[y / CELL][x / CELL] = 75;
+					}
+				}
+			}
+		}
+		break;
 	default:
 		break;
 	}
+
 	for (rx=-2; rx<3; rx++)
 		for (ry=-2; ry<3; ry++)
 			if (BOUNDS_CHECK && (rx || ry))
@@ -199,7 +245,8 @@ int Element_FIRE_update(UPDATE_FUNC_ARGS)
 				    //exceptions, t is the thing causing the spark and rt is what's burning
 				    (t != PT_SPRK || (rt != PT_RBDM && rt != PT_LRBD && rt != PT_INSL)) &&
 				    (t != PT_PHOT || rt != PT_INSL) &&
-				    (rt != PT_SPNG || parts[ID(r)].life == 0))
+				    (rt != PT_SPNG || parts[ID(r)].life == 0) &&
+					(t != PT_TLRY))
 				{
 					sim->part_change_type(ID(r), x+rx, y+ry, PT_FIRE);
 					parts[ID(r)].temp = restrict_flt(sim->elements[PT_FIRE].DefaultProperties.temp + (sim->elements[rt].Flammable/2), MIN_TEMP, MAX_TEMP);
